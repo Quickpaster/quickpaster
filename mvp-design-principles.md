@@ -41,5 +41,6 @@ User's data is most important thing. So we'll have it consistent and backed-up.
 - The same about WebSockets. They are session-data related objects. Just store data with them.
   On _each_ message one could create new controller re-compiling a file.
 - Avoid worker processes.
+- Development should be open-source to significally simplify development. Both, server and client side.
 
 * Written above needs more **simplification**
