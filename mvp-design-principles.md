@@ -4,8 +4,7 @@ Maybe, application itself should be very simple. But even simplest applications 
 Because of lack of npm-like require in browser, one needs to use JS compilers.
 You couldn't write `require()` in your code which will be loaded directly by the browser.
 You have to wrap it by special code fragments, at least. This princilple moves us to recompiling development workflow.
-Which is most robust when you just type `recompile`. Because your server code changes too. Your database too.
-It is convenient to start compilation (and even database migration) within your server's startup code.
+Which is most robust when you just type `recompile`. Because of your server code changes too alog with your database, it is convenient to start compilation (and even database migration) within your server's startup code.
 
 For creating MVP, one should:
 Write code ASAP (but have it agile enough). So I love to use React.
