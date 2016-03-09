@@ -1,0 +1,16 @@
+{
+  "name": "qpmvp",
+  "version": "1.0.0",
+  "description": "QuickPaster MVP",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "snabbdom": "^0.4.0",
+    "snabbdom-jsx": "^0.3.0",
+    "union-type": "^0.2.0"
+  }
+}
