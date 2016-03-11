@@ -25,7 +25,8 @@ function handleUpdateResult([newState, effectsRequests]) {
   state = newState;
 
   // Change DOM
-  vnode = patch(vnode, App.view({state, dispatch}));
+  const viewDispatch = viewAction => dispatch(state.action.ViewAction(viewAction));
+  vnode = patch(vnode, App.view({state: state.view, dispatch: viewDispatch}));
 
   // Change other world, if it's needed
   if (effectsRequests && effectsRequests.length) {
@@ -37,9 +38,17 @@ function dispatch(action) {
   handleUpdateResult(App.update(state, action));
 }
 
-export default (app, root) => {
+export default (app, root, route) => {
   vnode = root;
   App = app;
-  handleUpdateResult(App.init());
+
+  const [appStructure, appInitEffects] = App.init();
+  let initUpdateResult = App.update(appStructure, appStructure.action.Initialize(route));
+  if (initUpdateResult[1]) {
+    initUpdateResult[1] = appInitEffects.concat(initUpdateResult[1]);
+  } else {
+    initUpdateResult[1] = appInitEffects;
+  }
+  handleUpdateResult(initUpdateResult);
 }
 

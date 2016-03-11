@@ -1,6 +1,6 @@
 /** @jsx html */
 import { html } from 'snabbdom-jsx';
-import { Action } from './../state/address';
+import { Action } from './../action/address';
 
 const defaultLink = (dispatch, href) =>
   evt => {

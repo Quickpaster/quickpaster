@@ -2,19 +2,23 @@ import Type from 'union-type';
 
 export const Effect = Type({
   Address: [Array],
-  AutoDismissNotify: [String, Number]
+  ViewEffects: [Array]
 });
 
 import { Action, model } from './../state/app';
 import { executeEffects } from './../lib/util';
 import Address from './../address';
+import View from './../view';
 
-const onAddressChanged = dispatch => action =>
-  dispatch(Action.AddressChanged(action));
+const onAddressChanged = (state, dispatch) => action =>
+  dispatch(state.action.AddressChanged(action));
 
 export function execute (state, effect, dispatch) {
 
   return Effect.case({
+    ViewEffects: viewEffects => executeEffects(View.execute, state.view, viewEffects,
+      viewAction => dispatch(state.action.ViewAction(viewAction))),
+      
     Address: (addressChangeRequests) => executeEffects(
       // Sub-component execute
       Address.execute,
@@ -27,10 +31,7 @@ export function execute (state, effect, dispatch) {
 
       // Sub-component dispatcher thunk, if any Action should be passed back
       // from sub-component execute.
-      onAddressChanged(dispatch)),
-
-    AutoDismissNotify: (notifyId, dismissTimeout) =>
-      setTimeout(() => dispatch(Action.DismissNotify(notifyId)), dismissTimeout)
+      onAddressChanged(state, dispatch))
 
   }, effect);
 }

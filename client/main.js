@@ -40,14 +40,20 @@ Meteor.startup(() => {
       added: res => { if (!bypass) console.log('ADDED:', res); }
     });
 
-  const root = document.createElement('div');
+/*  const root = document.createElement('div');
   root.setAttribute('id', 'root');
   document.body.appendChild(root);
 
   const title = document.createElement('title');
   title.text = 'Quickpaster MVP';
   document.head.appendChild(title);
-  
-  start(App, root);
+*/
+
+  let root = document.getElementById('root');
+  while (root.hasChildNodes()) {
+    root.removeChild(root.firstChild);
+  }
+
+  start(App, root, window.location.pathname);
 });
 

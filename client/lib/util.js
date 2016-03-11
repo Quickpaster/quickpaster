@@ -17,3 +17,6 @@ export const executeEffects = (execute, state, effects, dispatch) =>
   // Effects.case({
   effects.forEach(effect => execute(state, effect, dispatch));
 
+export const actions = (type, ...actionsList) =>
+  actionsList.reduce((actionsMap, name) => ({...actionsMap, [name]: type[name]}), {});
+
