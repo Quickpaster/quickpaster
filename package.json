@@ -9,6 +9,8 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "asap": "^2.0.3",
+    "setimmediate": "^1.0.4",
     "snabbdom": "^0.4.0",
     "snabbdom-jsx": "^0.3.0",
     "snabbdom-to-html": "^2.1.3",

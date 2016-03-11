@@ -131,5 +131,48 @@ be prototyped in the body of state, that's appropriate. But handlers selection s
 of parent's update(), view() and execute() logic. What model filters out is only 'child' state,
 in quotes because it's just _part_ of parent's state.
 
+Therefore, passing of 'internal' actions related only to child component may be implemented
+by dispatchering into parent's dispatcher which will bind the selecting model function
+(without state, of course) to parent's pass-thru action emitter.
 
+Thus, selection of partial state related to a child is not strongly typed but completely
+encapsulated inside the parent's logic. Parent can use either appropriate method.
+
+The pass-thru actions are not highly transparent. They really require parent to make manual
+filtering to keep the model agile. Therefore, they could be named like 'SendToChildName'
+of 'ActionForChildName'. Child's type is encoded by parent's action signature itself,
+because it allows to completely separate update() and view() hierarchies.
+
+# TLA+ Next Action Predicate
+
+As we see from the description, we couldn't have automatical actions after model state changes
+not in view() nor execute() because it follows to potentially infinite recursion.
+
+So, imagine a component without view which wants to emit automatical actions (based on new state) to its parent.
+
+Passing an Effect to execute() sounds heavy-weight and unnecessary complication - and it forces
+implementation to use setTimeout()!
+
+So, we need a dispatchable way to derive a new action (or more!) from new state which will work like
+view() and execute() but automatically based on action mapper results.
+
+Next action predicate support is completely equivalent to Effects execute() support.
+
+Code logic is the same. So it is a big question whether or not to separate it to nap(), async() and dirty().
+
+Effect name, effect arguments and complete current state are passed into present() function, which will filter out the necessary data to create a stale data and state representation useful for passing into corresponding effect execution function. For a single effect, application can be configured to have multiple present() functions, which will adapt state and effect arguments into arguments for a particular presentation function. Application can be configured to use different multiple presenters even for the same present() effect arguments and state convertation.
+
+Component's init() function have to be supplied with external pluggable Effects mapping, for every component's effect it should be at least one (assigned by list) presenter, which will implement action predicate interface. For each effect, it could be a list of state adapt functions, for each state adapt function, it could be a list of presenters supplied externally. All presenters, even console.log(), have to be supplied externally as dependencies.
+
+Presenters code is universal and may be useful to visualize/present/subscribe and make other effects on multiple different kinds of applications.
+
+But presenter adapter is a plugin interface for a component. It could be supplied externally, but have to know state's internal structure. So state present adapters may be named just plugins.
+
+A presenter can output information to external world and can pass it down into component. Time measure is also kind of such information. When a component emits effect asking time measure, external world will measure it with setTimeout() call!
+
+To make a presenter work, it should be attached to a corresponding component plugin. Effects are pretty abstract notions of world changes. But plugins contain precise interface describing exact part of state and effect arguments available for a presenter and precisely specify which actions a presenter can use to change component state.
+
+(action, actionArguments, state) => update => (state, [effect, effectArgument]) => plugins => presenters
+
+That's the final architecture.
 

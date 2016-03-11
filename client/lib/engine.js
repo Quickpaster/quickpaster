@@ -6,8 +6,10 @@
 
 import { executeEffects } from './util';
 import snabbdom from 'snabbdom';
+import asap from 'asap';
+import setimmediate from 'immediate';
 
-let state = undefined;
+let theState = undefined;
 let vnode = undefined;
 let App = undefined;
 
@@ -22,27 +24,37 @@ function handleUpdateResult([newState, effectsRequests]) {
 
   // Replace old store with new version
   // TODO: use mori.js to make it more effective?
-  state = newState;
+  theState = newState;
 
-  // Change DOM
-  const viewDispatch = viewAction => dispatch(state.action.ViewAction(viewAction));
-  vnode = patch(vnode, App.view({state: state.view, dispatch: viewDispatch}));
+  // Change DOM based on newState
+  const viewDispatch = viewAction => dispatch(newState.action.ViewAction(viewAction));
+  vnode = patch(vnode, App.view({state: newState.view, dispatch: viewDispatch}));
 
-  // Change other world, if it's needed
+  // All effects can be divided into the following categories:
+  // 1. Next Action Predicate (pure State Machine handlers).
+  // 2. Time Delayed Actions (simple delay before some action).
+  // 3. Asynchronous actions (server-sent events, websocket messages, etc.)
+  // 4. World changing imperative operations (side effects)
   if (effectsRequests && effectsRequests.length) {
-    executeEffects(App.execute, state, effectsRequests, dispatch);
+    // setimmediate(() => 
+    executeEffects(App.execute, newState, effectsRequests, dispatch);//);
   }
 }
 
 function dispatch(action) {
-  handleUpdateResult(App.update(state, action));
+  handleUpdateResult(App.update(theState, action));
 }
 
 export default (app, root, route) => {
   vnode = root;
   App = app;
 
+  // TODO: remove effects from init(). init() should never return effects.
+  // But new returned state should return a list of all allowed effects
+  // for all possible transitions from that state.
   const [appStructure, appInitEffects] = App.init();
+
+  // TODO: Remove update from here. It is not necessary.
   let initUpdateResult = App.update(appStructure, appStructure.action.Initialize(route));
   if (initUpdateResult[1]) {
     initUpdateResult[1] = appInitEffects.concat(initUpdateResult[1]);
