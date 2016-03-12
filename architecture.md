@@ -176,3 +176,117 @@ To make a presenter work, it should be attached to a corresponding component plu
 
 That's the final architecture.
 
+
+(action, actionArguments, state) => <engine passes allowable effects list here> update => (state, [effect, effectArgument]) => plugins => presenters
+
+A plugin should have access to any future possible (not only allowed!) action on any future state of the object,
+not only on its current state.
+
+That means that plugin have access to component's global action list.
+Also, it should be a model function which creates a 'list' (named map) of actions possible on the given state,
+that is the only way to get all possible component's actions - both private and public.
+
+Component filters out this list when returns from its init() or update() function
+thus creating a public interface for its parent/owner. Its private interface is passed into
+the system init()/update() proxy thus containing all possible actions.
+
+Any action returned from component's init()/update() to the proxy may have been passed before
+by the component into one of its allowed actions for any thrown effect.
+
+A component can't But it could be more than that, a component may give access to its future state possible action
+into effect's allowed actions list.
+
+While an effect is not canceled, it means that at any given time it could happen an action on state (on any state!)
+which was passed in the list of effect's allowed actions, effectively creating a chain of state transitions
+and allowed actions.
+
+The thrown effect can be supplied with ANY action from that State Transitions Chain/Loop.
+Component should guarantee that every that action will be available in any state from the chain
+before cancelling or completing the effect. Cancelling and completing should be created with
+allowed actions 'Canceled' and any kind of some 'completed' action wich will mean that effect
+woun't more calls any provided action, i.e., it effectively 'destroyed'.
+
+To make cancelation support, a component should be provided with both 'start' and 'cancel' effects.
+
+#### Uncancellable Effects
+Some effects may be uncancellable, i.e. a component can't control
+that effect woun't emit any action which were supplied to it.
+Such component never can't transition to its state which doesn't allow
+receiving one of the provided actions into the effect - while component has its state.
+
+#### Effect's Supplied Actions
+Thus, a component may supply any its effect with any private or public action,
+sometimes effectively extending its transition chain area. The system may detect
+that automatically and throw logic exceptions when a component transitions
+to a state without canceling the effect supplied with a prohibited action.
+
+To make that magic happen, the system should know when an effect is finished
+(complete, failed, canceled).
+
+The effective state transitions chain area is dynamic, not static, it can't
+be determined just by statically analyzing all possible thrown effects
+and allowed actions passed to them.
+
+The magic can work when marking some actions for an effect as action which moves
+to effect's finish. So, any effect can be supplied with any type of the following
+actions lists:
+- Allowed Complete Actions List
+- Allowed Failed Actions List
+- Allowed Aborted Actions List
+- Allowed In-Run Actions List
+
+But the system is not interested in the semantics. It should be just two lists
+of allowed actions:
+- Thrown When Complete (if calling without exiting will throw driver exception).
+- Usual Actions (never indicate effect's completion/error/cancellation;
+  if an effect exits before emiting its 'Thrown When Complete' action, the system throws an exception too!)
+
+To abort an effect, it should be used an another effect
+
+Effect specification is supplied with full two lists of allowed actions - the first
+designates effect's completed 'state' and the second is just used while the effect works.
+
+But that full specification is component's own 'semi-public' ('protected'???)
+interface allowed to use in Plugin state reduce implementation.
+
+Plugin state reducer implementation can use all list of the allowed actions for an effect.
+But the system have to track which precisely actions the Plugin state reducer
+uses to pass callbacks to the driver.
+Therefore, plugin will be supplied with callbacks to action creator factories:
+  
+  - a Plugin calls an action creator factory, the factory returns action creator
+    which plugin can use to call directly to create an action or to pass
+    the creator down to driver.
+
+List of actions allowed to emit from an effect should be static.
+
+A plugin is supplied with action creator instead of dispatcher because amount of actions
+is fixed, but amount of effects multiplied to amount of actions could dramatically
+increase consumed memory and performance. It should be a simple dispatcher
+which could switch internally on type of action emiited to mark plugin instance's
+destruction.
+
+Plugin instance is bridge from driver up to component thru dispatcher.
+It converts driver's low-level events into actions.
+
+So, plugin may be supplied with complete list of allowed actions,
+but plugin 'requires' only that of them which it will call.
+
+It is preferrable to implement that as explicit 'import' of the every named
+action to make the system determine which actions the plugin could actually use.
+
+This 'import' should be happen on the plugin's initialization phase, when it will
+bind all required actions into explicit parts of it.
+
+
+
+
+
+
+
+
+
+
+
+
+
