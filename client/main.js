@@ -49,6 +49,8 @@ Meteor.startup(() => {
   document.head.appendChild(title);
 */
 
+  // See https://github.com/leeoniya/domvm/blob/master/src/view.js#L309
+  // To modify Snabbdom for absorbing existing DOM ('hydrating').
   let root = document.getElementById('root');
   while (root.hasChildNodes()) {
     root.removeChild(root.firstChild);
