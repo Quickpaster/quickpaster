@@ -160,21 +160,91 @@ Next action predicate support is completely equivalent to Effects execute() supp
 
 Code logic is the same. So it is a big question whether or not to separate it to nap(), async() and dirty().
 
-Effect name, effect arguments and complete current state are passed into present() function, which will filter out the necessary data to create a stale data and state representation useful for passing into corresponding effect execution function. For a single effect, application can be configured to have multiple present() functions, which will adapt state and effect arguments into arguments for a particular presentation function. Application can be configured to use different multiple presenters even for the same present() effect arguments and state convertation.
+Effect name, effect arguments and complete current state are passed into present() function,
+which will filter out the necessary data to create a stale data and state representation useful
+for passing into corresponding effect execution function. For a single effect,
+application can be configured to have multiple present() functions, which will
+adapt state and effect arguments into arguments for a particular presentation function.
+Application can be configured to use different multiple presenters even for
+the same present() effect arguments and state convertation.
 
-Component's init() function have to be supplied with external pluggable Effects mapping, for every component's effect it should be at least one (assigned by list) presenter, which will implement action predicate interface. For each effect, it could be a list of state adapt functions, for each state adapt function, it could be a list of presenters supplied externally. All presenters, even console.log(), have to be supplied externally as dependencies.
+Component's init() function have to be supplied with external pluggable Effects mapping,
+for every component's effect it should be at least one (assigned by list) presenter,
+which will implement action predicate interface. For each effect, it could be a list
+of state adapt functions, for each state adapt function, it could be a list of presenters
+supplied externally. All presenters, even console.log(), have to be supplied externally as dependencies.
 
-Presenters code is universal and may be useful to visualize/present/subscribe and make other effects on multiple different kinds of applications.
+Presenters code is universal and may be useful to visualize/present/subscribe
+and make other effects on multiple different kinds of applications.
 
-But presenter adapter is a plugin interface for a component. It could be supplied externally, but have to know state's internal structure. So state present adapters may be named just plugins.
+But presenter adapter is a plugin interface for a component.
+It could be supplied externally, but have to know state's internal structure.
+So state present adapters may be named just plugins.
 
-A presenter can output information to external world and can pass it down into component. Time measure is also kind of such information. When a component emits effect asking time measure, external world will measure it with setTimeout() call!
+A presenter can output information to external world and can pass it down into component.
+Time measure is also kind of such information. When a component emits effect asking time measure,
+external world will measure it with setTimeout() call!
 
-To make a presenter work, it should be attached to a corresponding component plugin. Effects are pretty abstract notions of world changes. But plugins contain precise interface describing exact part of state and effect arguments available for a presenter and precisely specify which actions a presenter can use to change component state.
+To make a presenter work, it should be attached to a corresponding component plugin.
+Effects are pretty abstract notions of world changes.
+But plugins contain precise interface describing exact part of state and effect arguments available
+for a presenter and precisely specify which actions a presenter can use to change component state.
 
 (action, actionArguments, state) => update => (state, [effect, effectArgument]) => plugins => presenters
 
 That's the final architecture.
+
+But follows with more deep Plugins idea research (and implementation, see `client/tlap.js` draft)...
+
+```
+'Allowed Effects List' -> init
+statemapper:
+f(state) => _S_
+
+effect: [possible actions]
+effect: [args]
+
+available [effects]
+state
+action
+[action data]
+  
+  goes to ->
+
+   new state +
+   [[effect, args]]
+
+one effect
+  -> multiple effect mappings ('plugins')
+     -> multiple renderers
+
+(effect mapper 'plugin')
+* state (+ model prototype funtions for easy manipulations with state)
+* effect [effect args]
+* [available actions] - below we considered that it's better to have
+  access to all list of state transitioner actions, but access them
+  via complete(), abort(), error() and usual dispatch() system 'require()'-like
+  interfaces to track actions use and make dynamical automatical check
+  of all state transitions.
+
+  => results in
+    reduced stale state ('view data')
+    reduced actions callbacks (usually embedded into the view data
+    to described earlier 'complete()' and other functions.
+
+
+* * * effects (callable to create and 'throw' from init() and update()
+<--- <--- <---
+[Child.Effect.bind(child plugins)
+Child.init(mappers)
+effect.call(state, actions) - legacy schema
+```
+
+It is worth noting that the technology can even use jQuery for rendering instead
+of Snabbdom and React approaches. Changesets describing what are exactly changed
+may become part of the new state, thus allowing to describe diffs between states.
+That 'changeset' part may even be incremental, allowing to navigate historically
+between all the state changes.
 
 
 (action, actionArguments, state) => <engine passes allowable effects list here> update => (state, [effect, effectArgument]) => plugins => presenters
@@ -332,6 +402,133 @@ arguments between different drivers of the same plugin, but they should be compl
 compatible by arguments order or key maps.
 
 
-
 When child component is initialized / updated, it should be supplied with
 'binder' functions, which will map to...
+
+Plugins has access to _all_ component actions, but should mark them belonging
+to one of the 4 particular action groups, 'complete', 'fail', 'abort' or usual ('progress')
+and serialize access to all used actions thru special system access 'require()'-like
+function calls. For an example,
+ 
+```
+// Action creator example:
+complete(Child.Action.Walk)(actionArgs);
+progress(Child.Action.Sit)(actionArgs);
+```
+
+This calls are dynamic, i.e. may be happen even after passing resulting state presentation
+to drivers. But the system may wrap this functions around concept of Action-Effect Group ID
+(see below) to differentiate and group completed actions from multiple sources.
+
+A component is a state presentation. One state may be shared between multiple components.
+
+A state should be shared either by means of drivers isolation - automatically
+in the configuration system thanks for different plugin hierarchies.
+Another way to share state - explicit share in plugins body code between different
+passed down plugin types and handling each answer (plugin's return value) explicitly.
+
+That means that multiplied plugins will receive the same effect,
+but may be supplied with different action dispatchers provided by the parent plugin.
+
+
+Action Source: 'Driver.PluginPack'.
+Plugin Packs may be described by 'Parent Pack'.'Child sub revision' with unlimited
+chain depth, but only when the same parent pack uses the different child subpacks.
+Otherwise child packs are always assumed the same as parent's when resolving
+which child plugin functions plugin implementations may be imported and called
+inside of parent's plugin implementation passing part of filtered state to them.
+
+
+It may be sub-completion events, notifying state with sub-plugin completion.
+They work like 'Progress' actions, not finishing the effect.
+But when the last completion action is emitted by the last sub-plugin,
+state transitioner receives 'Full' completion action. State transitioner
+should receive all sub-components completion actions just as a special kind of actions.
+But different plugins may complete with different kinds of actions!!!
+
+Completed, aborted and error just have to be the same action, 'Complete'
+with aggregated sub-actions of all components. Any plugin emitting 'Complete' action
+can supply it with a complete result, 'succeeded, failed or aborted'.
+
+It may be partial failure, it should move to general failure. It may be partial abort,
+it should move to general abort (but only when all complete actions has been collected).
+
+Succeeded should be filled with complete list of success results from each plugin
+(with one or more different kinds R1, R2, etc.)
+
+
+'Completed' action contains all result types in order of their happening.
+
+'Aborted' action may contain all types of results: completed (with types),
+failed and aborted. The list have to be in order of happening.
+
+'Failed' action may only contain failed and completed result types, never aborted.
+
+Thus, it should be 4 types of actions available for plugins 'require()'-analog
+action importers, not 2.
+
+'Half-Completion Notify' actions supply all the events in time, one-by-one.
+Their type is like 'Progress', but they should contain attached Action-Effect Group ID
+(see below) to precisely identify completed plugin place.
+
+Completed, Aborted, Failed are common _kinds_ of actions, not instances, and may contain
+exact action instances inside of them. 'Half-Completion Notify' too.
+
+5 kinds of actions:
+1. Concurrent actions ('Progress'), intermixed from different drivers and plugin instances.
+   Anonymous source by design.
+2. Completed (with a list of sources and exact completion actions)
+3. Failed (with 2 lists of failed and maybe completed actions, no abort there)
+4. Aborted (with 3 lists of action kinds)
+5. Partial Completion (only one action of kind 2, 3 or 4).
+
+Each state tranitioner should support receiving of 4 special system kinds of actions,
+Completed, Failed, Aborted and 'Partial Completion Notify'.
+
+So, 'Effect Group' concept is emerged. A group of effects unites Actions
+(R1,R2,Er1,Er2,Ab1,Ab2) and Effects (Ef1,Ef2) into one logical entity.
+
+
+State transitioner should process Action-Effect Groups:
+
+- EG1Completed
+  - CompletedAs1Action[src id] -> transitions...
+  - CompletedAs2Action[src id] -> transitions...
+
+- EG2Completed
+  - Result3Action -> transitions...
+
+- EG1Failed
+  - Result1Action -> transitions...
+  - ErrorResult2Action -> transitions...
+
+- EG1Aborted
+  - Result1Action -> transitions...
+  - ErrorResult2Action -> transitions...
+  - Aborted1Action -> transitions...
+
+- EG1Notify
+  - Result1Action -> NO transitions (only notify reactions)...
+  - ErrorResult2Action -> NO transitions...
+
+When an effect is thrown, state transitioner have to specify Effect Group name for every effect.
+
+The same effect may belong to different Effect Groups; The same is true for Actions.
+
+A state transitioner passes Action-Effect Group ID which it can differentiate in Actions case() part.
+
+The system groups all kinds of 'completed', 'failed', 'aborted' and 'partial complete'
+actions emitted from plugins respectively to that Action-Effect Group ID. The system intentionally
+doesn't group any progress actions by that AEGID emitted by plugins and not allows to identify
+particular plugin source (that actions are anonymous.
+
+
+Plugin Packs Group - configuration part, builds plugin chain hierarchies allowing
+parent plugins implementations do 'require()' their corresponding child plugins
+implementations. Grouping is allowed across multiple effects.
+
+The plugin group information is not used inside init and update implementations.
+
+It's static and external to the core app.
+
+
