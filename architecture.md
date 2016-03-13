@@ -263,7 +263,7 @@ List of actions allowed to emit from an effect should be static.
 A plugin is supplied with action creator instead of dispatcher because amount of actions
 is fixed, but amount of effects multiplied to amount of actions could dramatically
 increase consumed memory and performance. It should be a simple dispatcher
-which could switch internally on type of action emiited to mark plugin instance's
+which could switch internally on type of action emitted to mark plugin instance's
 destruction.
 
 Plugin instance is bridge from driver up to component thru dispatcher.
@@ -278,15 +278,60 @@ action to make the system determine which actions the plugin could actually use.
 This 'import' should be happen on the plugin's initialization phase, when it will
 bind all required actions into explicit parts of it.
 
+Plugin instance, when called, creates just arguments list for one or more drivers
+attached to it. Attachment of the drivers is completely external to application.
+
+All drivers should be attached to corresponding plugins on the start of the app.
+
+Parent's operation plugin code should know how to filter the full state
+and determine child state. Based on that child state it could call child's
+operations sequence which is supplied by child effects list thrown in its
+update() or init() functions.
+
+Child effect information either collected in parent's effect instance,
+or passed into plugins chain like in views implementations.
+
+Child component's operations chain will receive filtered state,
+specialized effect info for child (its own effects list),
+event back dispatch callbacks (which will convert low-level actions emitted
+by child components into high-level parent actions.
+
+All that code will happen in plugins code.
+
+A plugin is like a view() function. And a driver is like an execute() funtion.
+
+When a view subsequently 'rendered' from a general 'plugin' function, parent's view,
+it will pass information to child plugins based on children effects list packed
+into parent's effect description. Thus, a parent's plugin function
+should be able to filter out child's state (and determining allowable
+child actions based on the state) and passing that state into a child plugin.
+
+Plugins call chain thus creates only actions callback thunks and passes effects
+arguments down to farther children.
+
+Plugins should return complete set of _arguments_ for their respective drivers.
+The returning happens, of course, from children's plugins to parent plugin.
+
+When parent plugin receives children's answers (their plugins return values),
+it should pack the answers into respective identifying arguments of upper resultset.
+One example of the resultset is VDOM with bound action callbacks. When a child returns
+the VDOM fragment, parent just capsulates it inside it's own returned resultset.
+
+Uppermost parent plugin should encapsulate all collected callbacks and driver arguments
+and pass the data to attached drivers. Result of all plugin chain execution will be supplied
+to all attached drivers. One upper plugin may be connected to more than one driver.
+
+Internal plugins can't be connected to drivers directly, that's the task of the
+main application. Upper application's plugin(s) should be callable by the engine system
+and their results will be passed into driver functions.
+
+On the upper level, application can be configured to have attached more than one driver
+function to one plugin and the engine will pass the plugin's processing result
+into all attached drivers functions. It should be allowed to have different number of
+arguments between different drivers of the same plugin, but they should be completely
+compatible by arguments order or key maps.
 
 
 
-
-
-
-
-
-
-
-
-
+When child component is initialized / updated, it should be supplied with
+'binder' functions, which will map to...
