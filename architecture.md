@@ -1,3 +1,98 @@
+# Terminology
+
+Terminology should be re-written according to most concise one got from Event Sourcing
+approach:
+
+## Parent/Child vs Owner/Ownee
+Owner, Container, Aggregate are great words and exactly describe the same thing.
+But for their attributes, fields, values, members and even elements - all that semantics
+are just too foolish to confuse the thinkers.
+
+It is greatly worth noting that term 'Value' exactly describes all the sum of a Container's
+parts. So, term 'Internal State' completely equals to term 'Value'. But there's no precise
+word to describe a Container's Element by omitting the word 'Container'. Because even Container
+may be an attribute of its containing Container. And word 'Element' describes a Container both
+as an owner and as an ownee. But the word 'attribute' is hard-linked to its container, not
+describes the entity itself. An attribute can be both a container and a final type.
+
+Final types are described just by Enumerations of all their Values. So, when we talk about
+a type, we mean a range of Values. State is internal contents of the State Container.
+Thus, State Containers may be of two types: Container of Container(s) and Container of Value.
+
+But the word 'Value' is too wide to describe 'Final Value' term. We have to use another term
+for it. People often use the word 'Atom' confusing readers more. It is worth noting that 'Value'
+and 'Instance' and 'Contents' are the same words.
+
+
+
+## Event
+In our model we name it Action.
+A notification from executed operation, an action on a state machine, a command send to state machine.
+Very often people name events as actions.
+Actually, when Events come from outer world, they could represent _facts_ about external world
+changes, when they're requested in Actions (Effect requests).
+
+To a parent, it's child state change _always_ is an Event (a fact that another world is changed).
+Thus, parent's Plugin may implement a Model State change observer, which will look at the child's
+Model State and emit an automatical Event when child will have a corresponding state.
+
+Event is named instead of Actions in Redux not to confuse people. And we exactly mean those 'click' UI events too.
+
+## State
+A returned value of special state function call wich returns one of the values of the enumerated State type.
+Sometimes people name that as 'control state'. Also they often name 'Model' intermixing both Model Type and Model State.
+In our documentation we also often mix 'State' and 'Model State'.
+
+## Execute
+A concept which have to be consisted of two parts instead of ES single concept 'Execute'.
+First part is (Model State + Action + action data + Model Event Dispatchers) 'presentation' reducement
+(which we name 'Plugin') which leads to a special Data Arguments adapted to pass them into corresponding 'driver'.
+
+Sometimes, after a child effect's execution, the resulting data have to be passed as arguments into the following
+parent's driver instructions, a driver implementation should support parent/child component relations too.
+
+So, a Plugin should be able to create a reduced effect data representation which will be possible
+for parent's driver to understand after which parent's instruction it should execute
+child's instructions, and which arguments from the parent's instruction execution results
+the driver should use in child execution context, and how to use the child execution results
+into the parent's subsequent instructions execution.
+
+A plugin should provide driver with such information. Maybe, support of runtime variables bindings
+and usage of child driver execution results as a variable in parent's execution context.
+
+Please carefully note that plugins never 
+
+A complex function performing an Effect (Action!) based on given state which could lead to one or more events.
+In our model it is divided into the system of Plugins (which determine partial Model State Representations
+based on Actions and bind area of allowed Events into a Model State Representation) and Drivers
+(unpure functions), which receive Model State Representations bound with Event Callbacks and Execute given Representations. 
+Often named as Async Action Handlers.
+
+## Action
+In our model we name it Effect. Information from State Transitioner about changes it request from outer world.
+Often people name it 'Intentions' to change 'state', but mean the state of outer world.
+
+We can use Yassine Yelouafi's concept named 'Effect' instead of action because it describes intent.
+Or rename it just to Request.
+
+## Apply
+A pure state transition function. Supplied with Model State and Event and leads to a new Model State.
+Often we call it 'update()', 'init()' or State Transitioner. Event Soursing not describes Actions (our Effects)
+as another output from the Apply function, but just accounts them as a part of the Model State ('Action Requests'???)
+Apply function receives an Event from outer world (a fact that some previous thrown Action (Effect!) led to world change,
+and have to reconcile that Event into a new internal State / Model State _and_ new Action requests (Intentions to change outer world).
+Events should not be interpreted as Intentions too, because they are REALLY FACTS
+described REAL CHANGES, objective truths which happen externally. That Events lead to UNCONDITIONAL internal state
+transition, they can't be thrown away. So, if some Event can't be processed by internal state machine, that's not
+inadequate 'intention request from the outer world', that's a FACT, and error is inside our state machine that it couldn't
+interpret the Fact. And intentions are our model's Effects (which named just Actions in the Event Sourcing approach).
+Also, that's great to call Events as Notifications instead of Actions or Facts, because a particular state machine
+just could ignore some facts which were sent to it.
+Also, in Redux, this 'Apply' is named 'Reduce'
+
+
+# Research
+
 State contains actions, available to process in that state.
 When state changed to that one which doesn't support particular action,
 the state should clear that action available for execution within
@@ -530,5 +625,26 @@ implementations. Grouping is allowed across multiple effects.
 The plugin group information is not used inside init and update implementations.
 
 It's static and external to the core app.
+
+
+# New Ideas
+
+State Transitioners are not have to work with real state at all!
+They could be supplied with State() function call result wich just supplies
+them with 'State ID'. And when their state machine transitioners should emit
+new effect requests based on received Event ID, Event Arguments and State ID,
+they just transition the state machine to a new State ID (without modifying
+even their Model State's fields/attributes at all!) and throw
+a new Effect Request ID + Effect Request Arguments along with the new State ID.
+
+It is worth noting that a State Transitioner may throw an internal Effect Request
+containing in its arguments all the internal state or, better, state deltas!
+
+To derive the Effect Arguments containing state deltas, a State Transitioner may
+base thrown Effect arguments on received Event arguments.
+
+A component even may throw its state just from its respective State Storage Plugin,
+thus effectively outsourcing its internal state semantics into an Effect Request Reducer.
+
 
 

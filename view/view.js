@@ -21,11 +21,18 @@ const onLinkClicked = (state, dispatch) =>
     } */
   };
 
-export default ({state, dispatch}, children) => {
-
-  return <div id="root">
+export default ({state, dispatch, complete, abort, fail}, children) =>
+  <div id="root">
     <ul>
-      { state.notify.map(({id, message}) => <li>{message} <button on-click={() => dispatch(state.action.DismissNotify(id))}>Dismiss</button></li>) }
+      { state.notify.map(({id, message}) =>
+         <li>
+           {message}
+           <button on-click={() =>
+             dispatch(state.action.DismissNotify(id))}>
+             Dismiss
+           </button>
+         </li>)
+      }
     </ul>
       <h1>You at {
         state.address === '/' ? 'home' :
@@ -44,4 +51,4 @@ export default ({state, dispatch}, children) => {
       </ul>
     </div>
   </div>;
-}
+

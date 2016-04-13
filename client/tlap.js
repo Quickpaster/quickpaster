@@ -45,7 +45,33 @@ const Main = (() => {
     // Plugins should be installed and available for use with Child.
     // User can choose only from list allowed for Child.
     Child.init();
+
+    return [{}];
   };
+
+  const State = Type({
+    Init: [],
+    Walking: [],
+    Running: [],
+    Staying: []
+  });
+
+  const state = state => state == {} ? State.Init : State.Run;
+
+  const Action = Type({
+    Go: [],
+    GoFast: []
+  });
+
+  // State + Action => State + Effects
+  // Init + Go  => Walking + [Walk.G1]     (Walk Plugin: require(Go))
+  // Init + Run => Running + [Run]
+  // Walking + Go.G1 => Walking
+  // Walking + Go.G2 => Walking
+  // Walking + GoFast => Running + [Run]
+  //
+  // Running + Go => Walking + [Walk]
+  // Running + GoFast => Running
 
   const Effect = Type({
     Walk: [],

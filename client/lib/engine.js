@@ -6,8 +6,8 @@
 
 import { executeEffects } from './util';
 import snabbdom from 'snabbdom';
-import asap from 'asap';
-import setimmediate from 'immediate';
+// import asap from 'asap';
+// import setimmediate from 'immediate';
 
 let theState = undefined;
 let vnode = undefined;
